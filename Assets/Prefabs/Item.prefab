@@ -28,8 +28,8 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1286858838650094689}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.35, y: 0.35, z: 0.1}
+  m_LocalPosition: {x: 0, y: 0, z: -1}
+  m_LocalScale: {x: 0.25, y: 0.25, z: 0.1}
   m_Children:
   - {fileID: 7210920210095221498}
   m_Father: {fileID: 0}
@@ -37,8 +37,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 1.1126, y: -1.4018}
-  m_SizeDelta: {x: 0.6774, y: 0.7171}
+  m_AnchoredPosition: {x: 1.1512, y: -1.4152}
+  m_SizeDelta: {x: 0.75, y: 0.75}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!212 &5743792920537348750
 SpriteRenderer:
@@ -80,7 +80,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: e7e7c27c7b5c17f469ba176eece8d6df, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 0ea808d419bef9c43b6e5ea55b459042, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -132,14 +132,14 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1.6, y: 1.6}
+    oldSize: {x: 3.145, y: 2.56}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 2, y: 2}
+  m_Size: {x: 3, y: 3}
   m_EdgeRadius: 0
 --- !u!1 &2301640730092586013
 GameObject:
@@ -168,15 +168,15 @@ RectTransform:
   m_GameObject: {fileID: 2301640730092586013}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.9, y: 0.9, z: 1}
   m_Children: []
   m_Father: {fileID: 7210920210095221498}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 99.7, y: -263.9}
-  m_SizeDelta: {x: 473.1, y: 177.4}
+  m_AnchoredPosition: {x: 45, y: -134}
+  m_SizeDelta: {x: 392.1, y: 141.4}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2066331726562486602
 CanvasRenderer:
@@ -208,7 +208,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 125
+    m_FontSize: 115
     m_FontStyle: 3
     m_BestFit: 0
     m_MinSize: 0
@@ -250,7 +250,7 @@ RectTransform:
   m_GameObject: {fileID: 4246746652898067727}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -1}
-  m_LocalScale: {x: 0.003949447, y: 0.003949447, z: 0.003949447}
+  m_LocalScale: {x: 0.01, y: 0.01, z: 0.003949447}
   m_Children:
   - {fileID: 1738815883747871658}
   m_Father: {fileID: 875178637099970451}

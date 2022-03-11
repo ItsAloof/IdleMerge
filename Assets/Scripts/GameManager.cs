@@ -20,6 +20,13 @@ public class GameManager : MonoBehaviour
     [SerializeField, Tooltip("Set the starting level for items")]
     int startingLevel = 1;
 
+    [SerializeField, Tooltip("Forge Upgrade state")]
+    GameObject ForgeUpgradeState;
+
+    [SerializeField, Tooltip("Normal anvil state")]
+    GameObject ForgeNormalState;
+
+
     // Start is called before the first frame update
     void Start()
     {
