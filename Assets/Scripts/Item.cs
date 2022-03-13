@@ -63,10 +63,12 @@ public class Item : MonoBehaviour
         return slot;
     }
 
-    public void setLevel(int level)
+    public void setLevel(int level, List<Sprite> sprites)
     {
         this.level = level;
         this.levelDisplay.text = string.Format(levelTextFormat, level);
+
+        this.GetComponent<SpriteRenderer>().sprite = sprites[((this.level - 1) >= sprites.Count) ? sprites.Count - 1 : this.level - 1];
     }
 
     public void levelUp()
@@ -102,10 +104,10 @@ public class Item : MonoBehaviour
         return false;
     }
 
-    public GameObject mergeItems(GameObject item)
+    public GameObject mergeItems(GameObject item, List<Sprite> sprites)
     {
         Item itemInfo = item.GetComponent<Item>();
-        setLevel(this.level + 1);
+        setLevel(this.level + 1, sprites);
         return this.gameObject;
     }
 

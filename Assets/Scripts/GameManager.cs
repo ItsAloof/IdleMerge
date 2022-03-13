@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -38,17 +39,35 @@ public class GameManager : MonoBehaviour
     [SerializeField, Tooltip("Normal anvil state")]
     GameObject ForgeNormalState;
 
+    [SerializeField, Tooltip("List of all weapon sprites")]
+    List<Sprite> WeaponSprites = new List<Sprite>();
+
+    [SerializeField, Tooltip("List of all defense sprites")]
+    List<Sprite> DefenseSprites = new List<Sprite>();
+
+    [SerializeField]
+    GameObject WeaponBtn;
+
+    [SerializeField]
+    GameObject ActiveWeaponBtn;
+
+    [SerializeField]
+    GameObject DefenseBtn;
+
+    [SerializeField]
+    GameObject ActiveDefenseBtn;
+
     PlayerData playerData;
 
     bool Saving = false;
 
     bool CurrentlyWeapons = true;
 
-    string savePath = "something";
+    string savePath = "playerData.dat";
 
     private void Awake()
     {
-        savePath = $"{Application.persistentDataPath}/playerData.dat";
+        savePath = $"{Application.persistentDataPath}/{savePath}";
         Load();
     }
 
@@ -68,12 +87,6 @@ public class GameManager : MonoBehaviour
             Save();
         }
     }
-
-    public void OnEnable()
-    {
-
-    }
-
 
     // Start is called before the first frame update
     void Start()
@@ -117,7 +130,7 @@ public class GameManager : MonoBehaviour
                         items.Remove(draggedObject);
                         Destroy(draggedObject);
                         int index = items.IndexOf(itemInSlot);
-                        items[index] = itemInSlot.GetComponent<Item>().mergeItems(draggedObject);
+                        items[index] = itemInSlot.GetComponent<Item>().mergeItems(draggedObject, (CurrentlyWeapons) ? WeaponSprites : DefenseSprites);
                     }
                     else
                     {
@@ -157,9 +170,19 @@ public class GameManager : MonoBehaviour
 
             return;
         GameObject go = Instantiate(Item);
+
         int firstAvailableSlot = getFirstAvailableSlot();
-        go.GetComponent<Item>().setSlot(firstAvailableSlot, slotGroup[firstAvailableSlot], true);
-        go.GetComponent<Item>().setLevel(startingLevel);
+
+        if (CurrentlyWeapons)
+        {
+            go.GetComponent<Item>().setSlot(firstAvailableSlot, slotGroup[firstAvailableSlot], true);
+            go.GetComponent<Item>().setLevel(startingLevel, WeaponSprites);
+        }else
+        {
+            go.GetComponent<Item>().setSlot(firstAvailableSlot, slotGroup[firstAvailableSlot], true);
+            go.GetComponent<Item>().setIsWeapon(false);
+            go.GetComponent<Item>().setLevel(startingLevel, DefenseSprites);
+        }
         items.Add(go);
     }
 
@@ -216,11 +239,16 @@ public class GameManager : MonoBehaviour
         return -1;
     }
 
-    public void swapInventories(bool ToWeapons)
+    public void swapInventories()
     {
+        CurrentlyWeapons = !CurrentlyWeapons;
+        WeaponBtn.SetActive(!CurrentlyWeapons);
+        ActiveWeaponBtn.SetActive(CurrentlyWeapons);
+        DefenseBtn.SetActive(CurrentlyWeapons);
+        ActiveDefenseBtn.SetActive(!CurrentlyWeapons);
         foreach (GameObject go in items)
             go.SetActive(false);
-        if (ToWeapons)
+        if (CurrentlyWeapons)
         {
             Defenses = items;
             items = Weapons;
@@ -240,8 +268,11 @@ public class GameManager : MonoBehaviour
         Saving = true;
         BinaryFormatter bf = new BinaryFormatter();
         FileStream file = File.Create(savePath);
-
-        playerData.setWeapons(SerializeItems(items));
+        if (CurrentlyWeapons)
+            Weapons = items;
+        else
+            Defenses = items;
+        playerData.setWeapons(SerializeItems(Weapons));
         playerData.setDefenses(SerializeItems(Defenses));
         playerData.setForgeLevel(startingLevel);
 
@@ -282,11 +313,15 @@ public class GameManager : MonoBehaviour
             Debug.Log($"Creating a {(script.IsWeapon() ? "Weapon" : "Shield")} @ Level {script.getLevel()}");
             GameObject go = Instantiate(Item);
             go.GetComponent<Item>().setIsWeapon(Weapons);
-            go.GetComponent<Item>().setLevel(script.getLevel());
+            go.GetComponent<Item>().setLevel(script.getLevel(), (script.IsWeapon()) ? WeaponSprites : DefenseSprites);
             go.GetComponent<Item>().setSlot(script.getSlot(), slotGroup[script.getSlot()], true);
             go.SetActive(Hide);
             if (CurrentlyWeapons && Weapons)
                 items.Add(go);
+            if(script.IsWeapon())
+                this.Weapons.Add(go);
+            else 
+                this.Defenses.Add(go);
         }
         return list;
     }
