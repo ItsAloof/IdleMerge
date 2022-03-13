@@ -528,6 +528,7 @@ MonoBehaviour:
   - {fileID: 1886972557}
   - {fileID: 1820605061}
   - {fileID: 240735089}
+  StartingBalance: 7000
   startingLevel: 1
   ForgeUpgradeState: {fileID: 0}
   ForgeNormalState: {fileID: 0}
@@ -2152,7 +2153,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5479510852996246386, guid: 3b7c16be9c2a6a7459fd66531482261a, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.2766
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 5479510852996246386, guid: 3b7c16be9c2a6a7459fd66531482261a, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2380,7 +2381,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5479510852996246386, guid: 3b7c16be9c2a6a7459fd66531482261a, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.0027
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 5479510852996246386, guid: 3b7c16be9c2a6a7459fd66531482261a, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2820,8 +2821,8 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 0
-  m_Camera: {fileID: 0}
-  m_PlaneDistance: 100
+  m_Camera: {fileID: 519420031}
+  m_PlaneDistance: 10
   m_PixelPerfect: 1
   m_ReceivesEvents: 1
   m_OverrideSorting: 0

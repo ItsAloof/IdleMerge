@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
 
 public class GameManager : MonoBehaviour
 {
@@ -16,7 +18,17 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     List<GameObject> slotGroup;
 
+    [SerializeField, Tooltip("The starting balance for the player")]
+    int StartingBalance = 7000;
+
+    List<GameObject> Weapons = new List<GameObject>();
+
+    List<GameObject> Defenses = new List<GameObject>();
+
+    // List of current inventory
+    [SerializeField]
     List<GameObject> items = new List<GameObject>();
+
     [SerializeField, Tooltip("Set the starting level for items")]
     int startingLevel = 1;
 
@@ -26,10 +38,51 @@ public class GameManager : MonoBehaviour
     [SerializeField, Tooltip("Normal anvil state")]
     GameObject ForgeNormalState;
 
+    PlayerData playerData;
+
+    bool Saving = false;
+
+    bool CurrentlyWeapons = true;
+
+    string savePath = "something";
+
+    private void Awake()
+    {
+        savePath = $"{Application.persistentDataPath}/playerData.dat";
+        Load();
+    }
+
+    private void OnApplicationQuit()
+    {
+        if (Saving)
+            return;
+        Save();
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus)
+        {
+            if (Saving)
+                return;
+            Save();
+        }
+    }
+
+    public void OnEnable()
+    {
+
+    }
+
 
     // Start is called before the first frame update
     void Start()
     {
+        if (playerData != null)
+        {
+            List<GameObject> weapons = createGear(CurrentlyWeapons, true, playerData.getWeapons());
+            List<GameObject> defenses = createGear(!CurrentlyWeapons, false, playerData.getDefenses());
+        }
     }
 
     // Update is called once per frame
@@ -68,13 +121,13 @@ public class GameManager : MonoBehaviour
                     }
                     else
                     {
-                        draggedObject.GetComponent<Item>().setSlot(slot, closestSlot);
+                        draggedObject.GetComponent<Item>().setSlot(slot, closestSlot, false);
                         int newSlot = getFirstAvailableSlot();
-                        itemInSlot.GetComponent<Item>().setSlot(newSlot, slotGroup[newSlot]);
+                        itemInSlot.GetComponent<Item>().setSlot(newSlot, slotGroup[newSlot], false);
                     }
                 }else
                 {
-                    draggedObject.GetComponent<Item>().setSlot(slot, closestSlot);
+                    draggedObject.GetComponent<Item>().setSlot(slot, closestSlot, false);
                 }
                 dragging = false;
             }
@@ -97,6 +150,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+
     public void PurchaseItem()
     {
         if (items.Count == slotGroup.Count)
@@ -104,7 +158,7 @@ public class GameManager : MonoBehaviour
             return;
         GameObject go = Instantiate(Item);
         int firstAvailableSlot = getFirstAvailableSlot();
-        go.GetComponent<Item>().setSlot(firstAvailableSlot, slotGroup[firstAvailableSlot]);
+        go.GetComponent<Item>().setSlot(firstAvailableSlot, slotGroup[firstAvailableSlot], true);
         go.GetComponent<Item>().setLevel(startingLevel);
         items.Add(go);
     }
@@ -141,7 +195,7 @@ public class GameManager : MonoBehaviour
         }
         for(int i = 0; i < items.Count; i++)
         {
-            items[i].GetComponent<Item>().setSlot(i, slotGroup[i]);
+            items[i].GetComponent<Item>().setSlot(i, slotGroup[i], false);
         }
     }
 
@@ -160,5 +214,107 @@ public class GameManager : MonoBehaviour
                 return i;
         }
         return -1;
+    }
+
+    public void swapInventories(bool ToWeapons)
+    {
+        foreach (GameObject go in items)
+            go.SetActive(false);
+        if (ToWeapons)
+        {
+            Defenses = items;
+            items = Weapons;
+        }
+        else
+        {
+            Weapons = items;
+            items = Defenses;
+        }
+        foreach (GameObject go in items)
+            go.SetActive(true);
+    }
+
+
+    public void Save()
+    {
+        Saving = true;
+        BinaryFormatter bf = new BinaryFormatter();
+        FileStream file = File.Create(savePath);
+
+        playerData.setWeapons(SerializeItems(items));
+        playerData.setDefenses(SerializeItems(Defenses));
+        playerData.setForgeLevel(startingLevel);
+
+        bf.Serialize(file, playerData);
+        file.Close();
+        Saving = false;
+    }
+
+    public List<SerializableItem> SerializeItems(List<GameObject> list)
+    {
+        List<SerializableItem> items = new List<SerializableItem>();
+        foreach(GameObject go in list)
+        {
+            items.Add(go.GetComponent<Item>().MakeSerializable());
+        }
+        return items;
+    }
+
+    public void Load()
+    {
+        if (File.Exists(savePath))
+        {
+            BinaryFormatter bf = new BinaryFormatter();
+            FileStream file = File.Open(savePath, FileMode.Open);
+            PlayerData data = (PlayerData) bf.Deserialize(file);
+            this.playerData = data;
+        }else
+        {
+            this.playerData = new PlayerData(StartingBalance);
+        }
+    }
+
+    public List<GameObject> createGear(bool Hide, bool Weapons, List<SerializableItem> scripts)
+    {
+        List<GameObject> list = new List<GameObject>();
+        foreach(SerializableItem script in scripts)
+        {
+            Debug.Log($"Creating a {(script.IsWeapon() ? "Weapon" : "Shield")} @ Level {script.getLevel()}");
+            GameObject go = Instantiate(Item);
+            go.GetComponent<Item>().setIsWeapon(Weapons);
+            go.GetComponent<Item>().setLevel(script.getLevel());
+            go.GetComponent<Item>().setSlot(script.getSlot(), slotGroup[script.getSlot()], true);
+            go.SetActive(Hide);
+            if (CurrentlyWeapons && Weapons)
+                items.Add(go);
+        }
+        return list;
+    }
+
+    public void MoveToSlots(List<GameObject> gameObjects)
+    {
+        foreach(GameObject go in gameObjects)
+        {
+            int slot = go.GetComponent<Item>().getSlot();
+            go.GetComponent<RectTransform>().anchoredPosition = slotGroup[slot].GetComponent<RectTransform>().anchoredPosition;
+        }
+    }
+
+    public void DeleteSaveData()
+    {
+        if (File.Exists(Application.persistentDataPath + "/playerData.dat"))
+        {
+            File.Delete(Application.persistentDataPath + "/playerData.dat");
+        }
+    }
+
+    public List<Item> getItemScripts(List<GameObject> list)
+    {
+        List<Item> items = new List<Item>();
+        foreach(GameObject go in list)
+        {
+            items.Add(go.GetComponent<Item>());
+        }
+        return items;
     }
 }

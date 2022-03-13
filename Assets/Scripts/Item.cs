@@ -2,7 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
+[Serializable]
 public class Item : MonoBehaviour
 {
     [SerializeField]
@@ -31,10 +33,29 @@ public class Item : MonoBehaviour
         
     }
 
-    public void setSlot(int slot, GameObject slotGo)
+    public void setSlot(int slot, GameObject slotGo, bool instant)
     {
         this.slot = slot;
-        GetComponent<RectTransform>().anchoredPosition = slotGo.GetComponent<RectTransform>().anchoredPosition;
+        if(instant)
+            GetComponent<RectTransform>().anchoredPosition = slotGo.GetComponent<RectTransform>().anchoredPosition;
+        else
+            StartCoroutine(GoToSlot(slotGo.GetComponent<RectTransform>().anchoredPosition, this.gameObject));
+    }
+    IEnumerator GoToSlot(Vector2 position, GameObject itemToMove)
+    {
+        RectTransform rectTransform = itemToMove.GetComponent<RectTransform>();
+        float x = (position.x - rectTransform.anchoredPosition.x) / 4;
+        float y = (position.y - rectTransform.anchoredPosition.y) / 4;
+        while (position != rectTransform.anchoredPosition)
+        {
+            if (rectTransform.anchoredPosition.x == position.x)
+                x = 0;
+            else if (rectTransform.anchoredPosition.y == position.y)
+                y = 0;
+            rectTransform.anchoredPosition += new Vector2(x, y);
+            yield return new WaitForSeconds(0.01f);
+        }
+        //rectTransform.anchoredPosition = position;
     }
 
     public int getSlot()
@@ -86,6 +107,11 @@ public class Item : MonoBehaviour
         Item itemInfo = item.GetComponent<Item>();
         setLevel(this.level + 1);
         return this.gameObject;
+    }
+
+    public SerializableItem MakeSerializable()
+    {
+        return new SerializableItem(slot, level, weapon);
     }
 
 
