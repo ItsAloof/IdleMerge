@@ -80,6 +80,9 @@ public class GameManager : MonoBehaviour
     [SerializeField, Tooltip("Text to display current diamond balance in-game")]
     Text DiamondBalanceText;
 
+    [SerializeField]
+    int StartingLevelInc = 0;
+
     bool Saving = false;
 
     bool CurrentlyWeapons = true;
@@ -205,6 +208,7 @@ public class GameManager : MonoBehaviour
             go.GetComponent<Item>().setLevel(startingLevel, DefenseSprites);
         }
         items.Add(go);
+        startingLevel += StartingLevelInc;
     }
 
     public GameObject SlotTaken(int slot, GameObject movedItem)

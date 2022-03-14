@@ -924,6 +924,7 @@ MonoBehaviour:
   PurchaseItemCostText: {fileID: 42355185}
   CoinBalanceText: {fileID: 762961894}
   DiamondBalanceText: {fileID: 97538220}
+  StartingLevelInc: 1
 --- !u!4 &330104709
 Transform:
   m_ObjectHideFlags: 0
