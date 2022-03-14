@@ -10,7 +10,8 @@ public class PlayerData
     int Balance { get; set; } = 7000;
     int Diamonds { get; set; } = 0;
     int ForgeLevel = 1;
-
+    int WeaponCost { get; set; } = 300;
+    int DefenseCost { get; set; } = 300;
 
 
     public PlayerData()
@@ -21,6 +22,13 @@ public class PlayerData
     public PlayerData(int StartingBalance)
     {
         Balance = StartingBalance;
+    }
+
+    public PlayerData(int StartingBalance, int startingWeaponCost, int startingDefenseCost)
+    {
+        Balance = StartingBalance;
+        this.WeaponCost = startingWeaponCost;
+        this.DefenseCost = startingDefenseCost;
     }
 
 
@@ -94,9 +102,35 @@ public class PlayerData
         return this.Balance;
     }
 
+    public void setWeaponCost(int cost)
+    {
+        this.WeaponCost = cost;
+    }
+
+    public int getWeaponCost()
+    {
+        return WeaponCost;
+    }
+
+    public void setDefenseCost(int cost)
+    {
+        this.DefenseCost = cost;
+    }
+
+    public int getDefenseCost()
+    {
+        return DefenseCost;
+    }
+
     public string getBalanceFormatted()
     {
-        return Balance.ToString("C");
+        string coins = string.Format("{0:n}", Balance);
+        return coins.Substring(0, coins.Length - 3);
+    }
+    public string getDiamondsFormatted()
+    {
+        string diamonds = string.Format("{0:n}", Diamonds);
+        return diamonds.Substring(0, diamonds.Length - 3);
     }
 
 

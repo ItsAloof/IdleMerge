@@ -22,6 +22,9 @@ public class GameManager : MonoBehaviour
     [SerializeField, Tooltip("The starting balance for the player")]
     int StartingBalance = 7000;
 
+    [SerializeField, Tooltip("The starting balance for the player")]
+    int StartingDiamonds = 200;
+
     List<GameObject> Weapons = new List<GameObject>();
 
     List<GameObject> Defenses = new List<GameObject>();
@@ -46,6 +49,15 @@ public class GameManager : MonoBehaviour
     List<Sprite> DefenseSprites = new List<Sprite>();
 
     [SerializeField]
+    Image InventoryBackground;
+
+    [SerializeField, Tooltip("Background image used when in weapon inventory")]
+    Sprite SwordBackground;
+
+    [SerializeField, Tooltip("Background image used when in defense inventory")]
+    Sprite ShieldBackground;
+
+    [SerializeField]
     GameObject WeaponBtn;
 
     [SerializeField]
@@ -58,6 +70,15 @@ public class GameManager : MonoBehaviour
     GameObject ActiveDefenseBtn;
 
     PlayerData playerData;
+
+    [SerializeField, Tooltip("How much the next purchase will cost")]
+    Text PurchaseItemCostText;
+
+    [SerializeField, Tooltip("Text to display current coin balance in-game")]
+    Text CoinBalanceText;
+
+    [SerializeField, Tooltip("Text to display current diamond balance in-game")]
+    Text DiamondBalanceText;
 
     bool Saving = false;
 
@@ -252,11 +273,13 @@ public class GameManager : MonoBehaviour
         {
             Defenses = items;
             items = Weapons;
+            InventoryBackground.sprite = SwordBackground;
         }
         else
         {
             Weapons = items;
             items = Defenses;
+            InventoryBackground.sprite = ShieldBackground;
         }
         foreach (GameObject go in items)
             go.SetActive(true);
@@ -299,10 +322,19 @@ public class GameManager : MonoBehaviour
             FileStream file = File.Open(savePath, FileMode.Open);
             PlayerData data = (PlayerData) bf.Deserialize(file);
             this.playerData = data;
-        }else
+        }
+        else
         {
             this.playerData = new PlayerData(StartingBalance);
+            playerData.setDiamonds(StartingDiamonds);
         }
+        updateTextDisplays();
+    }
+
+    void updateTextDisplays()
+    {
+        CoinBalanceText.text = playerData.getBalanceFormatted();
+        DiamondBalanceText.text = playerData.getDiamondsFormatted();
     }
 
     public List<GameObject> createGear(bool Hide, bool Weapons, List<SerializableItem> scripts)
@@ -310,7 +342,7 @@ public class GameManager : MonoBehaviour
         List<GameObject> list = new List<GameObject>();
         foreach(SerializableItem script in scripts)
         {
-            Debug.Log($"Creating a {(script.IsWeapon() ? "Weapon" : "Shield")} @ Level {script.getLevel()}");
+            //Debug.Log($"Creating a {(script.IsWeapon() ? "Weapon" : "Shield")} @ Level {script.getLevel()}");
             GameObject go = Instantiate(Item);
             go.GetComponent<Item>().setIsWeapon(Weapons);
             go.GetComponent<Item>().setLevel(script.getLevel(), (script.IsWeapon()) ? WeaponSprites : DefenseSprites);
