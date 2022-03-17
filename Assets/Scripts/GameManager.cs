@@ -5,6 +5,7 @@ using UnityEngine;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 using UnityEngine.UI;
+using System.Linq;
 
 public class GameManager : MonoBehaviour
 {
@@ -17,13 +18,13 @@ public class GameManager : MonoBehaviour
 
     [Tooltip("Inventory Slots where items go")]
     [SerializeField]
-    List<GameObject> slotGroup;
+    public List<GameObject> slotGroup;
 
     [SerializeField, Tooltip("The starting balance for the player")]
-    int StartingBalance = 7000;
+    int StartingBalance;
 
     [SerializeField, Tooltip("The starting balance for the player")]
-    int StartingDiamonds = 200;
+    int StartingDiamonds;
 
     List<GameObject> Weapons = new List<GameObject>();
 
@@ -31,7 +32,7 @@ public class GameManager : MonoBehaviour
 
     // List of current inventory
     [SerializeField]
-    List<GameObject> items = new List<GameObject>();
+    public List<GameObject> items = new List<GameObject>();
 
     [SerializeField, Tooltip("Set the starting level for items")]
     int startingLevel = 1;
@@ -69,10 +70,7 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     GameObject ActiveDefenseBtn;
 
-    PlayerData playerData;
-
-    [SerializeField, Tooltip("How much the next purchase will cost")]
-    Text PurchaseItemCostText;
+    public PlayerData playerData;
 
     [SerializeField, Tooltip("Text to display current coin balance in-game")]
     Text CoinBalanceText;
@@ -80,19 +78,22 @@ public class GameManager : MonoBehaviour
     [SerializeField, Tooltip("Text to display current diamond balance in-game")]
     Text DiamondBalanceText;
 
-    [SerializeField]
-    int StartingLevelInc = 0;
-
     bool Saving = false;
 
-    bool CurrentlyWeapons = true;
+    public bool CurrentlyWeapons = true;
 
     string savePath = "playerData.dat";
+
+    Enemies enemies;
+
+    [SerializeField]
+    Forge Forge;
 
     private void Awake()
     {
         savePath = $"{Application.persistentDataPath}/{savePath}";
         Load();
+        enemies = new Enemies();
     }
 
     private void OnApplicationQuit()
@@ -115,31 +116,26 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if (playerData != null)
-        {
-            List<GameObject> weapons = createGear(CurrentlyWeapons, true, playerData.getWeapons());
-            List<GameObject> defenses = createGear(!CurrentlyWeapons, false, playerData.getDefenses());
-        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        if(dragging && Input.touchCount > 0)
+        if (dragging && Input.touchCount > 0)
         {
             Touch touch = Input.GetTouch(0);
             Vector3 vector3 = Camera.main.ScreenToWorldPoint(Input.GetTouch(0).position);
             Vector2 worldPos = new Vector2(vector3.x, vector3.y);
             if (touch.phase == TouchPhase.Moved)
                 draggedObject.GetComponent<Transform>().position = worldPos;
-            if(touch.phase == TouchPhase.Ended)
+            if (touch.phase == TouchPhase.Ended)
             {
                 GameObject closestSlot = slotGroup[0];
                 float closestDistance = Vector2.Distance(worldPos, closestSlot.transform.position);
-                for(int i = 1; i < slotGroup.Count; i++)
+                for (int i = 1; i < slotGroup.Count; i++)
                 {
                     float distance = Vector2.Distance(slotGroup[i].transform.position, worldPos);
-                    if(closestDistance > distance)
+                    if (closestDistance > distance)
                     {
                         closestDistance = distance;
                         closestSlot = slotGroup[i];
@@ -159,17 +155,19 @@ public class GameManager : MonoBehaviour
                     else
                     {
                         draggedObject.GetComponent<Item>().setSlot(slot, closestSlot, false);
-                        int newSlot = getFirstAvailableSlot();
+                        int newSlot = getFirstAvailableSlot(items);
                         itemInSlot.GetComponent<Item>().setSlot(newSlot, slotGroup[newSlot], false);
                     }
-                }else
+                }
+                else
                 {
                     draggedObject.GetComponent<Item>().setSlot(slot, closestSlot, false);
                 }
                 dragging = false;
             }
             return;
-        }else
+        }
+        else
         {
             dragging = false;
         }
@@ -186,38 +184,51 @@ public class GameManager : MonoBehaviour
             }
         }
     }
-
-
-    public void PurchaseItem()
+    float time = 0;
+    bool Fighting = false;
+    private void FixedUpdate()
     {
-        if (items.Count == slotGroup.Count)
+        if(time >= 5)
+        {
+            StartCoroutine(EnemyLoop());
+            Fighting = true;
+            time = 0;
+        }else if(!Fighting)
+            time += Time.deltaTime;
+    }
 
-            return;
+    public GameObject GenerateItem(bool IsWeapon, List<GameObject> items, bool Active)
+    {
         GameObject go = Instantiate(Item);
+        Debug.Log($"Creating Weapon={IsWeapon} thats Active={Active}");
+        int firstAvailableSlot = getFirstAvailableSlot(items);
 
-        int firstAvailableSlot = getFirstAvailableSlot();
-
-        if (CurrentlyWeapons)
+        if (IsWeapon)
         {
             go.GetComponent<Item>().setSlot(firstAvailableSlot, slotGroup[firstAvailableSlot], true);
             go.GetComponent<Item>().setLevel(startingLevel, WeaponSprites);
-        }else
+            playerData.setWeapons(SerializeItems(Weapons));
+        }
+        else
         {
             go.GetComponent<Item>().setSlot(firstAvailableSlot, slotGroup[firstAvailableSlot], true);
             go.GetComponent<Item>().setIsWeapon(false);
             go.GetComponent<Item>().setLevel(startingLevel, DefenseSprites);
+            playerData.setDefenses(SerializeItems(Defenses));
         }
-        items.Add(go);
-        startingLevel += StartingLevelInc;
+
+        go.SetActive(Active);
+
+        return go;
     }
 
     public GameObject SlotTaken(int slot, GameObject movedItem)
     {
-        foreach(GameObject go in items)
+        foreach (GameObject go in items)
         {
-            if(go != movedItem)
+            if (go != movedItem)
             {
-                if(go.GetComponent<Item>().getSlot() == slot)
+                if (go.GetComponent<Item>().getSlot() == slot)
                 {
                     return go;
                 }
@@ -229,11 +240,11 @@ public class GameManager : MonoBehaviour
     public void Sort()
     {
         int length = items.Count;
-        for(int i = 0; i < length - 1; i++)
+        for (int i = 0; i < length - 1; i++)
         {
-            for(int j = 0; j < length - i - 1; j++)
+            for (int j = 0; j < length - i - 1; j++)
             {
-                if(items[j].GetComponent<Item>().getLevel() < items[j + 1].GetComponent<Item>().getLevel())
+                if (items[j].GetComponent<Item>().getLevel() < items[j + 1].GetComponent<Item>().getLevel())
                 {
                     GameObject tmp = items[j];
                     items[j] = items[j + 1];
@@ -241,13 +252,13 @@ public class GameManager : MonoBehaviour
                 }
             }
         }
-        for(int i = 0; i < items.Count; i++)
+        for (int i = 0; i < items.Count; i++)
         {
             items[i].GetComponent<Item>().setSlot(i, slotGroup[i], false);
         }
     }
 
-    public int getFirstAvailableSlot()
+    public int getFirstAvailableSlot(List<GameObject> items)
     {
         if (items.Count == 0)
             return 0;
@@ -256,7 +267,7 @@ public class GameManager : MonoBehaviour
         {
             takenSlots.Add(go.GetComponent<Item>().getSlot());
         }
-        for(int i = 0; i < slotGroup.Count; i++)
+        for (int i = 0; i < slotGroup.Count; i++)
         {
             if (!takenSlots.Contains(i))
                 return i;
@@ -311,7 +322,7 @@ public class GameManager : MonoBehaviour
     public List<SerializableItem> SerializeItems(List<GameObject> list)
     {
         List<SerializableItem> items = new List<SerializableItem>();
-        foreach(GameObject go in list)
+        foreach (GameObject go in list)
         {
             items.Add(go.GetComponent<Item>().MakeSerializable());
         }
@@ -324,18 +335,22 @@ public class GameManager : MonoBehaviour
         {
             BinaryFormatter bf = new BinaryFormatter();
             FileStream file = File.Open(savePath, FileMode.Open);
-            PlayerData data = (PlayerData) bf.Deserialize(file);
+            PlayerData data = (PlayerData)bf.Deserialize(file);
             this.playerData = data;
+            List<GameObject> weapons = createGear(CurrentlyWeapons, true, playerData.getWeapons());
+            List<GameObject> defenses = createGear(!CurrentlyWeapons, false, playerData.getDefenses());
+            enemies = new Enemies(playerData.getCurrentStage(), playerData.getCurrentLevel());
         }
         else
         {
-            this.playerData = new PlayerData(StartingBalance);
-            playerData.setDiamonds(StartingDiamonds);
+            items.Add(GenerateItem(true, items, true));
+            Defenses.Add(GenerateItem(false, Defenses, false));
+            this.playerData = new PlayerData(StartingBalance, StartingDiamonds, Forge.BaseAttackItemCost, Forge.BaseDefenseItemCost, SerializeItems(items), SerializeItems(Defenses));
         }
         updateTextDisplays();
     }
 
-    void updateTextDisplays()
+    public void updateTextDisplays()
     {
         CoinBalanceText.text = playerData.getBalanceFormatted();
         DiamondBalanceText.text = playerData.getDiamondsFormatted();
@@ -344,7 +359,7 @@ public class GameManager : MonoBehaviour
     public List<GameObject> createGear(bool Hide, bool Weapons, List<SerializableItem> scripts)
     {
         List<GameObject> list = new List<GameObject>();
-        foreach(SerializableItem script in scripts)
+        foreach (SerializableItem script in scripts)
         {
             //Debug.Log($"Creating a {(script.IsWeapon() ? "Weapon" : "Shield")} @ Level {script.getLevel()}");
             GameObject go = Instantiate(Item);
@@ -354,9 +369,9 @@ public class GameManager : MonoBehaviour
             go.SetActive(Hide);
             if (CurrentlyWeapons && Weapons)
                 items.Add(go);
-            if(script.IsWeapon())
+            if (script.IsWeapon())
                 this.Weapons.Add(go);
-            else 
+            else
                 this.Defenses.Add(go);
         }
         return list;
@@ -364,7 +379,7 @@ public class GameManager : MonoBehaviour
 
     public void MoveToSlots(List<GameObject> gameObjects)
     {
-        foreach(GameObject go in gameObjects)
+        foreach (GameObject go in gameObjects)
         {
             int slot = go.GetComponent<Item>().getSlot();
             go.GetComponent<RectTransform>().anchoredPosition = slotGroup[slot].GetComponent<RectTransform>().anchoredPosition;
@@ -382,10 +397,74 @@ public class GameManager : MonoBehaviour
     public List<Item> getItemScripts(List<GameObject> list)
     {
         List<Item> items = new List<Item>();
-        foreach(GameObject go in list)
+        foreach (GameObject go in list)
         {
             items.Add(go.GetComponent<Item>());
         }
         return items;
+    }
+
+    IEnumerator EnemyLoop()
+    {
+        Enemy enemy = null;
+        playerData.setHealth(playerData.getMaxHealth());
+        if (enemies.getEnemyCount() == 0 || enemies.getEnemyCount() < 10 && enemies.getEnemyCount() != 5)
+        {
+            enemy = new Enemy(enemies.getEnemies().Where((e) => e.getName() == "Minion").FirstOrDefault());
+            if (enemy != null)
+            {
+                StartCoroutine(AttackLoop(enemy));
+            }
+        }
+        else if (enemies.getEnemyCount() == 5)
+        {
+            enemy = enemies.getEnemies().Where((e) => e.getName() == "Mini-Boss").FirstOrDefault();
+            if (enemy != null)
+            {
+                StartCoroutine(AttackLoop(enemy));
+            }
+        }
+        else if (enemies.getEnemyCount() == 10)
+        {
+            enemy = enemies.getEnemies().Where((e) => e.getName() == "Boss").FirstOrDefault();
+            if (enemy != null)
+            {
+                StartCoroutine(AttackLoop(enemy));
+            }
+            if (enemies.getEnemyCount() > 10)
+            {
+                enemies.setEnemyCount(0);
+            }
+        }
+        yield return new WaitUntil(() => enemy.getHealth() == 0 || playerData.getHealth() == 0);
+    }
+
+    IEnumerator AttackLoop(Enemy enemy)
+    {
+        bool FoeDead = false;
+        bool SelfDead = false;
+        while (!FoeDead && !SelfDead)
+        {
+            float PlayerDamage = 0;
+            float EnemyDamage = 0;
+            FoeDead = enemy.Attack(playerData.CalculateDamage(), out PlayerDamage);
+            SelfDead = playerData.Attack(enemy.getDamage(), out EnemyDamage);
+            Debug.Log($"Player delt {PlayerDamage} damage, Enemy Delt {EnemyDamage} damage\nPlayer Health: {playerData.getHealth()}, Enemy Health: {enemy.getHealth()}");
+            yield return new WaitForSeconds(1f);
+        }
+        if (FoeDead)
+        {
+            int coins = enemies.calculateGold(enemy);
+            playerData.deposit(coins);
+            updateTextDisplays();
+            enemies.setEnemyCount(enemies.getEnemyCount() + 1);
+            Debug.Log($"Killed {enemy.getName()} which dropped {coins} Gold Coins");
+        }
+        else
+        {
+            Debug.Log($"You have died to a {enemy.getName()}");
+            enemies.setEnemyCount(0);
+        }
+        Fighting = false;
     }
 }

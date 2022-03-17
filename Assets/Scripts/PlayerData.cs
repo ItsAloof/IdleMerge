@@ -7,11 +7,18 @@ public class PlayerData
 {
     List<SerializableItem> Weapons = new List<SerializableItem>();
     List<SerializableItem> Defense = new List<SerializableItem>();
-    int Balance { get; set; } = 7000;
+    Dictionary<int, int> DamageTable = new Dictionary<int, int>() { { 1, 1 }, { 2, 2 }, { 3, 4 }, { 4, 8 }, { 5, 16 }, { 6, 6 }, { 7, 7 }, { 8, 8 }, { 9, 9 }, { 10, 10 }, { 11, 11 }, { 12, 12 }, { 13, 13 }, { 14, 14 } };     
+    int Balance { get; set; } = 0;
     int Diamonds { get; set; } = 0;
     int ForgeLevel = 1;
     int WeaponCost { get; set; } = 300;
     int DefenseCost { get; set; } = 300;
+
+    int CurrentStage { get; set; } = 1;
+    int CurrentLevel { get; set; } = 1;
+
+    float Health = 100;
+    float MaxHealth = 100;
 
 
     public PlayerData()
@@ -24,11 +31,22 @@ public class PlayerData
         Balance = StartingBalance;
     }
 
-    public PlayerData(int StartingBalance, int startingWeaponCost, int startingDefenseCost)
+    public PlayerData(int StartingBalance, int StartingDiamonds, int startingWeaponCost, int startingDefenseCost)
     {
         Balance = StartingBalance;
+        Diamonds = StartingDiamonds;
         this.WeaponCost = startingWeaponCost;
         this.DefenseCost = startingDefenseCost;
+    }
+
+    public PlayerData(int StartingBalance, int StartingDiamonds, int startingWeaponCost, int startingDefenseCost, List<SerializableItem> Weapons, List<SerializableItem> Defenses)
+    {
+        Balance = StartingBalance;
+        Diamonds = StartingDiamonds;
+        this.WeaponCost = startingWeaponCost;
+        this.DefenseCost = startingDefenseCost;
+        this.Weapons = Weapons;
+        this.Defense = Defenses;
     }
 
 
@@ -122,15 +140,80 @@ public class PlayerData
         return DefenseCost;
     }
 
+    public void setCurrentStage(int stage)
+    {
+        this.CurrentStage = stage;
+    }
+
+    public void setCurrentLevel(int level)
+    {
+        this.CurrentLevel = level;
+    }
+
+    public int getCurrentStage()
+    {
+        return CurrentStage;
+    }
+
+    public int getCurrentLevel()
+    {
+        return CurrentLevel;
+    }
+
+    public float getHealth()
+    {
+        return Health;
+    }
+
+    public void setHealth(float Health)
+    {
+        this.Health = Health;
+    }
+
+    public float getMaxHealth()
+    {
+        return MaxHealth;
+    }
+
+    public void setMaxHealth(float MaxHealth)
+    {
+        this.MaxHealth = MaxHealth;
+    }
+
+    public int CalculateDamage()
+    {
+        int Damage = 0;
+        foreach(SerializableItem item in Weapons)
+        {
+            Damage += (int)Math.Pow(2, item.getLevel() - 1) * 2;
+        }
+        return Damage;
+    }
+
+    public int CalculateDefense()
+    {
+        int Defense = 0;
+        foreach (SerializableItem item in this.Defense)
+        {
+            Defense += (int) Math.Pow(2, item.getLevel() - 1) * 2;
+        }
+        return Defense;
+    }
+
+    public bool Attack(float damage, out float DamageDelt)
+    {
+        DamageDelt = (float)Math.Round(damage / (float)Math.Round((CalculateDefense() * 0.9f), 2), 2);
+        Health -= DamageDelt;
+        return (Health <= 0);
+    }
+
     public string getBalanceFormatted()
     {
-        string coins = string.Format("{0:n}", Balance);
-        return coins.Substring(0, coins.Length - 3);
+        return Balance.ToString("N0");
     }
     public string getDiamondsFormatted()
     {
-        string diamonds = string.Format("{0:n}", Diamonds);
-        return diamonds.Substring(0, diamonds.Length - 3);
+        return Diamonds.ToString("N0");
     }
 
 
