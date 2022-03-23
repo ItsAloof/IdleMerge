@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
+[Serializable]
 public class Enemies
 {
     int Stage { get; set; } = 1;
@@ -83,9 +84,18 @@ public class Enemies
 
     public void PopulateEnemies()
     {
-        Hostiles.Add(new Enemy("Minion", 25, 5, 2, 30));
-        Hostiles.Add(new Enemy("Mini-Boss", 75, 20, 10, 60));
-        Hostiles.Add(new Enemy("Boss", 150, 60, 25, 120));
+        // Passive Income Calculations
+        // Totals for Baase Level enemies
+        // Health, Damage, Defense, Coin Drop
+        // 250     120     60       210
+        // Level 4 Weapon Damage: 32
+        // Attack Damage Calculation: PlayerDamage / (EnemyDefense * 0.75f)
+        // Damage: 0.71
+        // Time To Kill @ 1 Hit/sec. = 352 seconds or 5.87 minutes
+        // Gold Per Hour = (60 / 5.87 Minutes) * 210 = (10.22) * 210 = 2146 Gold/Hr
+        Hostiles.Add(new Enemy("Minion",    25,  10, 5,  30));
+        Hostiles.Add(new Enemy("Mini-Boss", 75,  30, 15, 60));
+        Hostiles.Add(new Enemy("Boss",      150, 80, 40, 120));
     }
 
     public float CalculateMultiplier()

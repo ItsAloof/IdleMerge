@@ -6,6 +6,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 using UnityEngine.UI;
 using System.Linq;
+using System;
 
 public class GameManager : MonoBehaviour
 {
@@ -93,7 +94,6 @@ public class GameManager : MonoBehaviour
     {
         savePath = $"{Application.persistentDataPath}/{savePath}";
         Load();
-        enemies = new Enemies();
     }
 
     private void OnApplicationQuit()
@@ -313,6 +313,8 @@ public class GameManager : MonoBehaviour
         playerData.setWeapons(SerializeItems(Weapons));
         playerData.setDefenses(SerializeItems(Defenses));
         playerData.setForgeLevel(startingLevel);
+        playerData.setTime(DateTime.UtcNow);
+        playerData.setEnemies(this.enemies);
 
         bf.Serialize(file, playerData);
         file.Close();
@@ -339,13 +341,21 @@ public class GameManager : MonoBehaviour
             this.playerData = data;
             List<GameObject> weapons = createGear(CurrentlyWeapons, true, playerData.getWeapons());
             List<GameObject> defenses = createGear(!CurrentlyWeapons, false, playerData.getDefenses());
-            enemies = new Enemies(playerData.getCurrentStage(), playerData.getCurrentLevel());
+            enemies = playerData.getEnemies();
+            //TimeSpan ts = DateTime.UtcNow - playerData.getTime();
+            TimeSpan ts = new TimeSpan(0, 30, 0);
+            Debug.Log($"Time since last login: {ts.Hours}:{ts.Minutes}:{ts.Seconds}");
+            
+            int PassiveIncome = playerData.CalculatePassiveIncome((ts.Hours > 10) ? 10 : ts.Hours + (ts.Minutes / 60f));
+            playerData.deposit(PassiveIncome);
+            Debug.Log($"{PassiveIncome} Gold Coins generated for {((ts.Hours > 10) ? 10 : ts.Hours + (ts.Minutes / 60f))} Hours of passive income");
         }
         else
         {
             items.Add(GenerateItem(true, items, true));
             Defenses.Add(GenerateItem(false, Defenses, false));
             this.playerData = new PlayerData(StartingBalance, StartingDiamonds, Forge.BaseAttackItemCost, Forge.BaseDefenseItemCost, SerializeItems(items), SerializeItems(Defenses));
+            this.enemies = playerData.getEnemies();
         }
         updateTextDisplays();
     }
@@ -418,7 +428,7 @@ public class GameManager : MonoBehaviour
         }
         else if (enemies.getEnemyCount() == 5)
         {
-            enemy = enemies.getEnemies().Where((e) => e.getName() == "Mini-Boss").FirstOrDefault();
+            enemy = new Enemy((enemies.getEnemies().Where((e) => e.getName() == "Mini-Boss").FirstOrDefault()));
             if (enemy != null)
             {
                 StartCoroutine(AttackLoop(enemy));
@@ -426,7 +436,7 @@ public class GameManager : MonoBehaviour
         }
         else if (enemies.getEnemyCount() == 10)
         {
-            enemy = enemies.getEnemies().Where((e) => e.getName() == "Boss").FirstOrDefault();
+            enemy = new Enemy(enemies.getEnemies().Where((e) => e.getName() == "Boss").FirstOrDefault());
             if (enemy != null)
             {
                 StartCoroutine(AttackLoop(enemy));
@@ -436,6 +446,8 @@ public class GameManager : MonoBehaviour
                 enemies.setEnemyCount(0);
             }
         }
+        if (enemy == null)
+            yield return null;
         yield return new WaitUntil(() => enemy.getHealth() == 0 || playerData.getHealth() == 0);
     }
 
@@ -449,7 +461,7 @@ public class GameManager : MonoBehaviour
             float EnemyDamage = 0;
             FoeDead = enemy.Attack(playerData.CalculateDamage(), out PlayerDamage);
             SelfDead = playerData.Attack(enemy.getDamage(), out EnemyDamage);
-            Debug.Log($"Player delt {PlayerDamage} damage, Enemy Delt {EnemyDamage} damage\nPlayer Health: {playerData.getHealth()}, Enemy Health: {enemy.getHealth()}");
+            Debug.Log($"Player delt {PlayerDamage} damage, Enemy Delt {EnemyDamage} damage\nPlayer Health: {playerData.getHealth()}, {enemy.getName()}'s Health: {enemy.getHealth()}");
             yield return new WaitForSeconds(1f);
         }
         if (FoeDead)

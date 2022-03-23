@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 
 [Serializable]
@@ -7,7 +6,7 @@ public class PlayerData
 {
     List<SerializableItem> Weapons = new List<SerializableItem>();
     List<SerializableItem> Defense = new List<SerializableItem>();
-    Dictionary<int, int> DamageTable = new Dictionary<int, int>() { { 1, 1 }, { 2, 2 }, { 3, 4 }, { 4, 8 }, { 5, 16 }, { 6, 6 }, { 7, 7 }, { 8, 8 }, { 9, 9 }, { 10, 10 }, { 11, 11 }, { 12, 12 }, { 13, 13 }, { 14, 14 } };     
+
     int Balance { get; set; } = 0;
     int Diamonds { get; set; } = 0;
     int ForgeLevel = 1;
@@ -16,6 +15,10 @@ public class PlayerData
 
     int CurrentStage { get; set; } = 1;
     int CurrentLevel { get; set; } = 1;
+
+    Enemies Enemies { get; set; }
+
+    DateTime Time { get; set; }
 
     float Health = 100;
     float MaxHealth = 100;
@@ -47,6 +50,7 @@ public class PlayerData
         this.DefenseCost = startingDefenseCost;
         this.Weapons = Weapons;
         this.Defense = Defenses;
+        this.Enemies = new Enemies();
     }
 
 
@@ -140,6 +144,16 @@ public class PlayerData
         return DefenseCost;
     }
 
+    public void setEnemies(Enemies enemies)
+    {
+        this.Enemies = enemies;
+    }
+
+    public Enemies getEnemies()
+    {
+        return Enemies;
+    }
+
     public void setCurrentStage(int stage)
     {
         this.CurrentStage = stage;
@@ -180,6 +194,39 @@ public class PlayerData
         this.MaxHealth = MaxHealth;
     }
 
+    public void setTime(DateTime time)
+    {
+        Time = time;
+    }
+
+    public DateTime getTime()
+    {
+        return Time;
+    }
+
+    public int CalculatePassiveIncome(float Hours)
+    {
+        // Income per hour while offline
+        int Attack = CalculateDamage();
+        int Defense = CalculateDefense();
+        int TotalEnemyDefense = 0;
+        int TotalEnemyHealth = 0;
+        int TotalGoldDrop = 0;
+        foreach(Enemy enemy in Enemies.getEnemies())
+        {
+            TotalEnemyDefense += enemy.getDefense();
+            TotalEnemyHealth += (int) enemy.getHealth();
+            TotalGoldDrop += enemy.getCoinDrop();
+        }
+
+        float HitsToKill = TotalEnemyHealth / AttackDamage(CalculateDamage(), TotalEnemyDefense);
+        float TimeToKillEnemy = (float)Math.Round((HitsToKill + 5) / 60, 2);
+        float KillsPerHour = (float)Math.Round(60 / TimeToKillEnemy);
+        int GoldPerHour = (int)(KillsPerHour * TotalGoldDrop * 0.75);
+
+        return (int)Math.Round(GoldPerHour * Hours, MidpointRounding.AwayFromZero);
+    }
+
     public int CalculateDamage()
     {
         int Damage = 0;
@@ -202,9 +249,15 @@ public class PlayerData
 
     public bool Attack(float damage, out float DamageDelt)
     {
-        DamageDelt = (float)Math.Round(damage / (float)Math.Round((CalculateDefense() * 0.9f), 2), 2);
+        DamageDelt = (float)Math.Round(damage / (CalculateDefense() * 0.9f), 2);
         Health -= DamageDelt;
         return (Health <= 0);
+    }
+
+    public float AttackDamage(float damage, float defense)
+    {
+        float DamageDelt = (float) Math.Round(damage / (defense * 0.9f), 2);
+        return DamageDelt;
     }
 
     public string getBalanceFormatted()

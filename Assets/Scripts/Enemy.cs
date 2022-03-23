@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
+[Serializable]
 public class Enemy
 {
     string Name { get; set; }
@@ -80,7 +81,7 @@ public class Enemy
 
     public bool Attack(float damage, out float DamageDelt)
     {
-        DamageDelt = (float)Math.Round(damage / (float)Math.Round((Defense * 0.9f), 2), 2);
+        DamageDelt = (float)Math.Round(damage / (Defense * 0.9f), 2);
         Health -= DamageDelt;
         return (Health <= 0);
     }
